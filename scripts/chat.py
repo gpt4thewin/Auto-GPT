@@ -3,6 +3,8 @@ import openai
 from dotenv import load_dotenv
 from config import Config
 import token_counter
+from colorama import Fore, Style
+import console_utils
 
 cfg = Config()
 
@@ -116,13 +118,16 @@ def chat_with_ai(
                 print(f"Tokens remaining for response: {tokens_remaining}")
                 print("------------ CONTEXT SENT TO AI ---------------")
                 for message in current_context:
-                    # Skip printing the prompt
+                    # Skip printing the full prompt
                     if message["role"] == "system" and message["content"] == prompt:
-                        continue
-                    print(
-                        f"{message['role'].capitalize()}: {message['content']}")
+                        content = "<Rules prompt>"
+                        content_color = Fore.LIGHTBLUE_EX
+                    else:
+                        content = f"{message['content']}"
+                        content_color = Fore.LIGHTBLACK_EX
+                    console_utils.print_to_console(f"{message['role'].capitalize()}:", Fore.WHITE, content, content_color)
                     print()
-                print("----------- END OF CONTEXT ----------------")
+                print("----------- AI RESPONSE ----------------")
 
             # TODO: use a model defined elsewhere, so that model can contain temperature and other settings we care about
             assistant_reply = create_chat_completion(
@@ -130,6 +135,9 @@ def chat_with_ai(
                 messages=current_context,
                 max_tokens=tokens_remaining,
             )
+
+            console_utils.print_to_console(f"Assistant:", Fore.WHITE, assistant_reply, Fore.LIGHTBLACK_EX)
+            print("----------- END OF RESPONSE ----------------")
 
             # Update full message history
             full_message_history.append(

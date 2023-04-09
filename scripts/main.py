@@ -1,49 +1,18 @@
 import json
-import random
 import commands as cmd
 from memory import get_memory
 import data
 import chat
 from colorama import Fore, Style
 from spinner import Spinner
-import time
-import speak
 from enum import Enum, auto
-import sys
 from config import Config
 from json_parser import fix_and_parse_json
 from ai_config import AIConfig
 import traceback
 import yaml
 import argparse
-
-
-def print_to_console(
-        title,
-        title_color,
-        content,
-        speak_text=False,
-        min_typing_speed=0.05,
-        max_typing_speed=0.01):
-    global cfg
-    if speak_text and cfg.speak_mode:
-        speak.say_text(f"{title}. {content}")
-    print(title_color + title + " " + Style.RESET_ALL, end="")
-    if content:
-        if isinstance(content, list):
-            content = " ".join(content)
-        words = content.split()
-        for i, word in enumerate(words):
-            print(word, end="", flush=True)
-            if i < len(words) - 1:
-                print(" ", end="", flush=True)
-            typing_speed = random.uniform(min_typing_speed, max_typing_speed)
-            time.sleep(typing_speed)
-            # type faster after each word
-            min_typing_speed = min_typing_speed * 0.95
-            max_typing_speed = max_typing_speed * 0.95
-    print()
-
+import console_utils
 
 def print_assistant_thoughts(assistant_reply):
     global ai_name
@@ -57,7 +26,7 @@ def print_assistant_thoughts(assistant_reply):
             try:
                 assistant_reply_json = json.loads(assistant_reply_json)
             except json.JSONDecodeError as e:
-                print_to_console("Error: Invalid JSON\n", Fore.RED, assistant_reply)
+                console_utils.print_to_console("Error: Invalid JSON\n", Fore.RED, assistant_reply)
                 assistant_reply_json = {}
 
         assistant_thoughts_reasoning = None
@@ -73,11 +42,11 @@ def print_assistant_thoughts(assistant_reply):
             assistant_thoughts_criticism = assistant_thoughts.get("criticism")
             assistant_thoughts_speak = assistant_thoughts.get("speak")
 
-        print_to_console(f"{ai_name.upper()} THOUGHTS:", Fore.YELLOW, assistant_thoughts_text)
-        print_to_console("REASONING:", Fore.YELLOW, assistant_thoughts_reasoning)
+        console_utils.print_to_console(f"{ai_name.upper()} THOUGHTS:", Fore.YELLOW, assistant_thoughts_text)
+        console_utils.print_to_console("REASONING:", Fore.YELLOW, assistant_thoughts_reasoning)
 
         if assistant_thoughts_plan:
-            print_to_console("PLAN:", Fore.YELLOW, "")
+            console_utils.print_to_console("PLAN:", Fore.YELLOW, "")
             # If it's a list, join it into a string
             if isinstance(assistant_thoughts_plan, list):
                 assistant_thoughts_plan = "\n".join(assistant_thoughts_plan)
@@ -88,20 +57,20 @@ def print_assistant_thoughts(assistant_reply):
             lines = assistant_thoughts_plan.split('\n')
             for line in lines:
                 line = line.lstrip("- ")
-                print_to_console("- ", Fore.GREEN, line.strip())
+                console_utils.print_to_console("- ", Fore.GREEN, line.strip())
 
-        print_to_console("CRITICISM:", Fore.YELLOW, assistant_thoughts_criticism)
+        console_utils.print_to_console("CRITICISM:", Fore.YELLOW, assistant_thoughts_criticism)
         # Speak the assistant's thoughts
         if cfg.speak_mode and assistant_thoughts_speak:
             speak.say_text(assistant_thoughts_speak)
 
     except json.decoder.JSONDecodeError:
-        print_to_console("Error: Invalid JSON\n", Fore.RED, assistant_reply)
+        console_utils.print_to_console("Error: Invalid JSON\n", Fore.RED, assistant_reply)
 
     # All other errors, return "Error: + error message"
     except Exception as e:
         call_stack = traceback.format_exc()
-        print_to_console("Error: \n", Fore.RED, call_stack)
+        console_utils.print_to_console("Error: \n", Fore.RED, call_stack)
 
 
 def load_variables(config_file="config.yaml"):
@@ -161,7 +130,7 @@ def load_variables(config_file="config.yaml"):
 def construct_prompt():
     config = AIConfig.load()
     if config.ai_name:
-        print_to_console(
+        console_utils.print_to_console(
             f"Welcome back! ",
             Fore.GREEN,
             f"Would you like me to return to being {config.ai_name}?",
@@ -189,14 +158,14 @@ Continue (y/n): """)
 def prompt_user():
     ai_name = ""
     # Construct the prompt
-    print_to_console(
+    console_utils.print_to_console(
         "Welcome to Auto-GPT! ",
         Fore.GREEN,
         "Enter the name of your AI and its role below. Entering nothing will load defaults.",
         speak_text=True)
 
     # Get AI Name from User
-    print_to_console(
+    console_utils.print_to_console(
         "Name your AI: ",
         Fore.GREEN,
         "For example, 'Entrepreneur-GPT'")
@@ -204,14 +173,14 @@ def prompt_user():
     if ai_name == "":
         ai_name = "Entrepreneur-GPT"
 
-    print_to_console(
+    console_utils.print_to_console(
         f"{ai_name} here!",
         Fore.LIGHTBLUE_EX,
         "I am at your service.",
         speak_text=True)
 
     # Get AI Role from User
-    print_to_console(
+    console_utils.print_to_console(
         "Describe your AI's role: ",
         Fore.GREEN,
         "For example, 'an AI designed to autonomously develop and run businesses with the sole goal of increasing your net worth.'")
@@ -220,7 +189,7 @@ def prompt_user():
         ai_role = "an AI designed to autonomously develop and run businesses with the sole goal of increasing your net worth."
 
     # Enter up to 5 goals for the AI
-    print_to_console(
+    console_utils.print_to_console(
         "Enter up to 5 goals for your AI: ",
         Fore.GREEN,
         "For example: \nIncrease net worth, Grow Twitter Account, Develop and manage multiple businesses autonomously'")
@@ -251,23 +220,23 @@ def parse_arguments():
     args = parser.parse_args()
 
     if args.continuous:
-        print_to_console("Continuous Mode: ", Fore.RED, "ENABLED")
-        print_to_console(
+        console_utils.print_to_console("Continuous Mode: ", Fore.RED, "ENABLED")
+        console_utils.print_to_console(
             "WARNING: ",
             Fore.RED,
             "Continuous mode is not recommended. It is potentially dangerous and may cause your AI to run forever or carry out actions you would not usually authorise. Use at your own risk.")
         cfg.set_continuous_mode(True)
 
     if args.speak:
-        print_to_console("Speak Mode: ", Fore.GREEN, "ENABLED")
+        console_utils.print_to_console("Speak Mode: ", Fore.GREEN, "ENABLED")
         cfg.set_speak_mode(True)
 
     if args.gpt3only:
-        print_to_console("GPT3.5 Only Mode: ", Fore.GREEN, "ENABLED")
+        console_utils.print_to_console("GPT3.5 Only Mode: ", Fore.GREEN, "ENABLED")
         cfg.set_smart_llm_model(cfg.fast_llm_model)
 
     if args.debug:
-        print_to_console("Debug Mode: ", Fore.GREEN, "ENABLED")
+        console_utils.print_to_console("Debug Mode: ", Fore.GREEN, "ENABLED")
         cfg.set_debug_mode(True)
 
 
@@ -308,14 +277,14 @@ while True:
     try:
         command_name, arguments = cmd.get_command(assistant_reply)
     except Exception as e:
-        print_to_console("Error: \n", Fore.RED, str(e))
+        console_utils.print_to_console("Error: \n", Fore.RED, str(e))
 
     if not cfg.continuous_mode and next_action_count == 0:
         ### GET USER AUTHORIZATION TO EXECUTE COMMAND ###
         # Get key press: Prompt the user to press enter to continue or escape
         # to exit
         user_input = ""
-        print_to_console(
+        console_utils.print_to_console(
             "NEXT ACTION: ",
             Fore.CYAN,
             f"COMMAND = {Fore.CYAN}{command_name}{Style.RESET_ALL}  ARGUMENTS = {Fore.CYAN}{arguments}{Style.RESET_ALL}")
@@ -344,7 +313,7 @@ while True:
                 break
 
         if user_input == "GENERATE NEXT COMMAND JSON":
-            print_to_console(
+            console_utils.print_to_console(
             "-=-=-=-=-=-=-= COMMAND AUTHORISED BY USER -=-=-=-=-=-=-=",
             Fore.MAGENTA,
             "")
@@ -353,7 +322,7 @@ while True:
             break
     else:
         # Print command
-        print_to_console(
+        console_utils.print_to_console(
             "NEXT ACTION: ",
             Fore.CYAN,
             f"COMMAND = {Fore.CYAN}{command_name}{Style.RESET_ALL}  ARGUMENTS = {Fore.CYAN}{arguments}{Style.RESET_ALL}")
@@ -378,10 +347,10 @@ while True:
     # history
     if result is not None:
         full_message_history.append(chat.create_chat_message("system", result))
-        print_to_console("SYSTEM: ", Fore.YELLOW, result)
+        console_utils.print_to_console("SYSTEM: ", Fore.YELLOW, result)
     else:
         full_message_history.append(
             chat.create_chat_message(
                 "system", "Unable to execute command"))
-        print_to_console("SYSTEM: ", Fore.YELLOW, "Unable to execute command")
+        console_utils.print_to_console("SYSTEM: ", Fore.YELLOW, "Unable to execute command")
 
