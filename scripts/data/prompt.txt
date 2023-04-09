@@ -21,7 +21,6 @@ COMMANDS:
 15. Evaluate Code: "evaluate_code", args: "code": "<full_code_string>"
 16. Get Improved Code: "improve_code", args: "suggestions": "<list_of_suggestions>", "code": "<full_code_string>"
 17. Write Tests: "write_tests", args: "code": "<full_code_string>", "focus": "<list_of_focus_areas>"
-18. Execute Python File: "execute_python_file", args: "file": "<file>"
 19. Task Complete (Shutdown): "task_complete", args: "reason": "<reason>"
 20. Generate Image: "generate_image", args: "prompt": "<prompt>"
 
@@ -42,10 +41,11 @@ PERFORMANCE EVALUATION:
 You should only respond in JSON format as described below
 
 RESPONSE FORMAT:
+```json
 {
     "thoughts":
     {
-        "text": "thought",
+        "text": "thought. \"quotes\" must be escaped",
         "reasoning": "reasoning",
         "plan": "- short bulleted\n- list that conveys\n- long-term plan",
         "criticism": "constructive self-criticism",
@@ -58,5 +58,5 @@ RESPONSE FORMAT:
         }
     }
 }
+```
 
-Ensure the response can be parsed by Python json.loads

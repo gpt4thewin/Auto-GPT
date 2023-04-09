@@ -1,6 +1,7 @@
 import json
 from call_ai_function import call_ai_function
 from config import Config
+import re
 cfg = Config()
 
 def fix_and_parse_json(json_str: str, try_to_fix_with_gpt: bool = True):
@@ -25,6 +26,9 @@ def fix_and_parse_json(json_str: str, try_to_fix_with_gpt: bool = True):
 
     try:
         json_str = json_str.replace('\t', '')
+        code_snippet = re.search('```(json)?(.*)```', json_str, re.DOTALL)
+        if code_snippet:
+            json_str = code_snippet.group(2)
         return json.loads(json_str)
     except Exception as e:
         # Let's do something manually - sometimes GPT responds with something BEFORE the braces:
